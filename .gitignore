@@ -5,7 +5,7 @@ data/*
 # Environment variables 
 .env
 .env.*
-
+data/
 # Python
 __pycache__/
 *.py[cod]

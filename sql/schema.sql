@@ -3,9 +3,9 @@ CREATE TABLE agents (
     agent_name VARCHAR(100) NOT NULL,
     town VARCHAR(100) NOT NULL,
     division VARCHAR(100) NOT NULL,
-    registered DATE NOT NULL,
+    registered_on DATE NOT NULL,
     agent_type VARCHAR(50) NOT NULL,
-    float_limit DECIMAL(15, 2) NOT NULL CHECK (float_limit >= 0),
+    float_limit_xaf DECIMAL(15, 2) NOT NULL CHECK (float_limit_xaf >= 0),
     status VARCHAR(20) NOT NULL CHECK (status IN ('active', 'inactive'))
 );
 
