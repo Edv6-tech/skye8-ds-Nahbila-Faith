@@ -1,61 +1,61 @@
--- 1. Show all the agents in the database.
+-- 1. all agents
 SELECT *
 FROM agents;
 
 
--- 2. Show only the agents that are active.
+-- 2. active agents only
 SELECT *
 FROM agents
 WHERE status = 'active';
 
 
--- 3. Show the agents that are from the Bui division.
+-- 3. agents from Bui division
 SELECT *
 FROM agents
 WHERE division = 'Bui';
 
 
--- 4. Show the different types of agents we have.
+-- 4. distinct agent types
 SELECT DISTINCT agent_type
 FROM agents;
 
 
--- 5. Show the 10 agents with the highest float limit.
+-- 5. top 10 agents by float limit
 SELECT agent_id, agent_name, float_limit_xaf
 FROM agents
 ORDER BY float_limit_xaf DESC
 LIMIT 10;
 
 
--- 6. Find the total number of agents.
+-- 6. total agents
 SELECT COUNT(*) AS total_agents
 FROM agents;
 
 
--- 7. Find the average float limit for the agents.
+-- 7. average float limit
 SELECT AVG(float_limit_xaf) AS average_float_limit
 FROM agents;
 
 
--- 8. Find the total amount of all the transactions.
+-- 8. total transaction amount
 SELECT SUM(amount_xaf) AS total_transaction_amount
 FROM transactions;
 
 
--- 9. Find out how many agents there are for each agent type.
+-- 9. agent count per type
 SELECT agent_type, COUNT(*) AS total_agents
 FROM agents
 GROUP BY agent_type;
 
 
--- 10. Find the agent types that have more than 100 agents.
+-- 10. agent types with more than 100 agents
 SELECT agent_type, COUNT(*) AS total_agents
 FROM agents
 GROUP BY agent_type
 HAVING COUNT(*) > 100;
 
 
--- 11. Show each transaction together with the name of the agent.
+-- 11. transactions with agent name (inner join)
 SELECT
     transactions.txn_id,
     transactions.agent_id,
@@ -66,8 +66,7 @@ INNER JOIN agents
     ON transactions.agent_id = agents.agent_id;
 
 
--- 12. Show all agents and the transactions they have made.
--- Agents that have no transactions should still be shown.
+-- 12. all agents + their transactions, agents with none still show (left join)
 SELECT
     agents.agent_id,
     agents.agent_name,
@@ -78,8 +77,7 @@ LEFT JOIN transactions
     ON agents.agent_id = transactions.agent_id;
 
 
--- 13. Show all transactions and the agent connected to each one.
--- Transactions without a matching agent should still be shown.
+-- 13. all transactions + their agent, unmatched transactions still show (right join)
 SELECT
     transactions.txn_id,
     transactions.agent_id,
@@ -90,7 +88,7 @@ RIGHT JOIN transactions
     ON agents.agent_id = transactions.agent_id;
 
 
--- 14. Show all agents and all transactions, whether they match or not.
+-- 14. all agents and all transactions either way (full outer join)
 SELECT
     agents.agent_id,
     agents.agent_name,
@@ -101,7 +99,7 @@ FULL OUTER JOIN transactions
     ON agents.agent_id = transactions.agent_id;
 
 
--- 15. Show each transaction with the name and category of its service.
+-- 15. transactions with service name/category
 SELECT
     transactions.txn_id,
     services.service_name,
@@ -112,7 +110,7 @@ INNER JOIN services
     ON transactions.service_code = services.service_code;
 
 
--- 16. Find the agents whose float limit is higher than the average.
+-- 16. agents above average float limit (subquery)
 SELECT
     agent_id,
     agent_name,
@@ -124,7 +122,7 @@ WHERE float_limit_xaf > (
 );
 
 
--- 17. Find transactions whose amount is higher than the average transaction amount.
+-- 17. transactions above average amount (subquery)
 SELECT
     txn_id,
     agent_id,
@@ -136,14 +134,13 @@ WHERE amount_xaf > (
 );
 
 
--- 18. Show the different agent types for agents registered before 2025.
+-- 18. agent types registered before 2025
 SELECT DISTINCT agent_type
 FROM agents
 WHERE registered_on < '2025-01-01';
 
 
--- 19. Show the different values that appear as either an agent division
--- or a service category.
+-- 19. divisions and service categories combined (union)
 SELECT division AS value
 FROM agents
 UNION
@@ -151,7 +148,7 @@ SELECT category AS value
 FROM services;
 
 
--- 20. Find the agent IDs that are found in both agents and transactions.
+-- 20. agent ids in both agents and transactions (intersect)
 SELECT agent_id
 FROM agents
 INTERSECT
@@ -159,7 +156,7 @@ SELECT agent_id
 FROM transactions;
 
 
--- 21. Find the agents that are registered but have no transactions.
+-- 21. agents with no transactions (except)
 SELECT agent_id
 FROM agents
 EXCEPT
@@ -167,45 +164,58 @@ SELECT agent_id
 FROM transactions;
 
 
--- 22. Compare the total number of agents with the number
--- of agents that have a float limit.
+-- 22. total agents vs agents with a float limit (NULL check via COUNT)
 SELECT
     COUNT(*) AS total_agents,
     COUNT(float_limit_xaf) AS agents_with_float_limit
 FROM agents;
 
 
--- 23. Compare the total transactions with transactions
--- that have an amount recorded.
+-- 23. total transactions vs transactions with an amount (NULL check via COUNT)
 SELECT
     COUNT(*) AS total_transactions,
     COUNT(amount_xaf) AS transactions_with_amount
 FROM transactions;
 
 
--- 24. Show how joining agents and transactions can multiply rows.
--- Before the join, an agent has one row in the agents table.
--- After the join, an agent can appear once for every transaction.
-SELECT
-    agents.agent_id,
-    agents.agent_name,
-    COUNT(transactions.txn_id) AS number_of_transactions
+-- 24. agents before join
+SELECT COUNT(*) FROM agents;
+-- 1,055
+
+-- agents after joining to transactions - way more rows now
+SELECT COUNT(*)
 FROM agents
 INNER JOIN transactions
-    ON agents.agent_id = transactions.agent_id
-GROUP BY agents.agent_id, agents.agent_name
-ORDER BY number_of_transactions DESC;
+    ON agents.agent_id = transactions.agent_id;
 
 
--- 25. Show how joining services and transactions can multiply rows.
--- Before the join, a service has one row in the services table.
--- After the join, a service can appear once for every transaction.
-SELECT
-    services.service_code,
-    services.service_name,
-    COUNT(transactions.txn_id) AS number_of_transactions
+-- 25. services before join
+SELECT COUNT(*) FROM services;
+-- 18
+
+-- services after joining to transactions 
+SELECT COUNT(*)
 FROM services
 INNER JOIN transactions
-    ON services.service_code = transactions.service_code
-GROUP BY services.service_code, services.service_name
-ORDER BY number_of_transactions DESC;
+    ON services.service_code = transactions.service_code;
+
+
+-- 26. total amount per agent, checked against pandas - matches
+SELECT agent_id, SUM(amount_xaf) AS amount_xaf
+FROM transactions
+GROUP BY agent_id
+ORDER BY agent_id;
+
+
+-- 27. fee per agent per service, checked against pandas - matches
+SELECT agent_id, service_code, SUM(fee_xaf) AS fee_xaf
+FROM transactions
+GROUP BY agent_id, service_code
+ORDER BY agent_id, service_code;
+
+
+-- 28. count per status, checked against pandas - matches
+SELECT status, COUNT(*) AS txn_count
+FROM transactions
+GROUP BY status
+ORDER BY status;
