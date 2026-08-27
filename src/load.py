@@ -6,29 +6,25 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 
-# find the data folder (one level up, inside data/)
+
 data_folder = Path(__file__).resolve().parents[1] / "data"
 
-# connect to the database
+
 load_dotenv()
 engine = create_engine(os.getenv("DATABASE_URL"))
 
 
-# ---------- 1. read the csv files ----------
+
 agents = pd.read_csv(data_folder / "agents.csv")
 services = pd.read_csv(data_folder / "services.csv")
 transactions = pd.read_csv(data_folder / "transactions.csv")
 
-
-# ---------- 2. drop duplicate ids ----------
 agents = agents.drop_duplicates("agent_id")
 services = services.drop_duplicates("service_code")
 transactions = transactions.drop_duplicates("txn_id")
 
 
-# ---------- 3. fix the date columns ----------
-# the csv has mixed date formats, so we let pandas figure each one out
-# and turn anything it can't understand into NaT (a missing date)
+# fix dates
 agents["registered_on"] = pd.to_datetime(
     agents["registered_on"], errors="coerce", format="mixed"
 )
@@ -36,8 +32,7 @@ transactions["txn_ts"] = pd.to_datetime(
     transactions["txn_ts"], errors="coerce", format="mixed"
 )
 
-# registered_on is NOT NULL in our schema, so an agent with no valid
-# date can't be loaded - we just drop those rows
+# drop bad dates
 rejected_agent_dates = agents["registered_on"].isna().sum()
 agents = agents[agents["registered_on"].notna()]
 
@@ -45,9 +40,7 @@ rejected_txn_dates = transactions["txn_ts"].isna().sum()
 transactions = transactions[transactions["txn_ts"].notna()]
 
 
-# ---------- 4. clean up text columns ----------
-# the csv has extra spaces and mixed UPPER/lower case, so we
-# standardise everything the same way
+# clean text cols
 agents["agent_id"] = agents["agent_id"].str.strip().str.upper()
 agents["agent_type"] = agents["agent_type"].str.strip().str.upper()
 
@@ -70,9 +63,7 @@ transactions["service_code"] = transactions["service_code"].str.strip().str.uppe
 transactions["status"] = transactions["status"].str.strip().str.upper()
 
 
-# ---------- 5. clean up the money columns ----------
-# some amounts have commas or a currency symbol in front, e.g. "XAF 1,000"
-# so we strip out anything that isn't a digit, a dot, or a minus sign
+# clean money cols
 money_columns = ["float_limit_xaf", "base_fee_pct", "amount_xaf", "fee_xaf"]
 
 for table in [agents, services, transactions]:
@@ -84,7 +75,7 @@ for table in [agents, services, transactions]:
             )
 
 
-# ---------- 6. drop rows with missing required numbers ----------
+# drop rows missing required numbers
 rejected_agents = agents["float_limit_xaf"].isna().sum()
 agents = agents[agents["float_limit_xaf"].notna()]
 
@@ -99,19 +90,14 @@ transactions = transactions[
 ]
 
 
-# ---------- 7. keep only transactions with a real agent ----------
-# this has to run AFTER we clean the agents table above, so we are
-# checking against the agents that will actually make it into the db
+# drop transactions with unknown agent
 known_agent_ids = agents["agent_id"]
 
 rejected_unknown_agents = (~transactions["agent_id"].isin(known_agent_ids)).sum()
 transactions = transactions[transactions["agent_id"].isin(known_agent_ids)]
 
 
-# ---------- 8. keep only transactions with a real service ----------
-# same idea as step 7, but for service_code - our schema also has a
-# foreign key from transactions.service_code to services.service_code,
-# so this has to hold too or the insert will fail
+# drop transactions with unknown service
 known_service_codes = services["service_code"]
 
 rejected_unknown_services = (
@@ -122,12 +108,7 @@ transactions = transactions[
 ]
 
 
-# ---------- 9. protect the customer phone numbers ----------
-# customer_msisdn is a personal identifier, so we should not store
-# the full number. Instead we keep only the last 4 digits and
-# replace the rest with X's, e.g. 6XXXXXXXXX237 -> we still know
-# roughly which numbers are repeat customers, but the real number
-# is not stored anywhere.
+# mask customer numbers
 def mask_msisdn(number):
     number = str(number).strip()
     if len(number) <= 4:
@@ -137,18 +118,14 @@ def mask_msisdn(number):
 transactions["customer_msisdn"] = transactions["customer_msisdn"].apply(mask_msisdn)
 
 
-# ---------- 10. turn missing numbers into real NULLs for postgres ----------
+# nan to none for postgres
 for table in [agents, services, transactions]:
     for col in money_columns:
         if col in table.columns:
             table[col] = table[col].astype(object).where(table[col].notna(), None)
 
 
-# ---------- 11. load the data into postgres, in batches ----------
-# inserting one row at a time is slow for 200k+ rows, so instead we
-# send a few thousand rows at once. ON CONFLICT DO NOTHING means if
-# we run this script twice, rows that are already there get skipped
-# instead of duplicated - that is what makes the load idempotent.
+# batch insert function
 def load_table(connection, table_name, id_column, column_names, rows, batch_size=5000):
     if len(rows) == 0:
         return
@@ -200,7 +177,7 @@ with engine.begin() as connection:
     )
 
 
-# ---------- 12. print a summary so we can see what happened ----------
+# summary
 print("Agents loaded:", agents.shape[0])
 print("Services loaded:", services.shape[0])
 print("Transactions loaded:", transactions.shape[0])
