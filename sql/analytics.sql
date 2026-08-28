@@ -49,7 +49,7 @@ FROM retained r
 JOIN cohort_sizes s ON s.cohort_month = r.cohort_month
 ORDER BY r.cohort_month, r.month_number;
 
-
+--The output of this query is found in the file reports/cohort_retention.csv
 -- Q2. running fee revenue total + 7 day average daily transaction volume
 
 WITH daily AS (
@@ -72,7 +72,7 @@ SELECT
 FROM daily
 ORDER BY txn_date;
 
-
+--The output of this query is found in the file reports/moving_average_output.csv
 -- Q3. who are the top 3 agents by value in each division
 
 WITH agent_value AS (
@@ -98,7 +98,7 @@ SELECT *
 FROM ranked
 WHERE division_rank <= 3
 ORDER BY division, division_rank;
-
+--The output of this query is found in the file reports/top_agents_by_division.csv
 
 -- Q4. which agents are bringing in more than the average agent
 
@@ -138,6 +138,9 @@ JOIN agent_totals t ON t.agent_id = a.agent_id
 CROSS JOIN avg_total
 WHERE t.total_value > avg_total.avg_value;
 
+--The output of this query is found in the file reports/above_average_agents.csv
+-- would use the CTE version in production, same result but cheaper
+-- to run since agent_totals is only calculated once instead of twice
 
 
 -- Q5. is this query too slow, and does adding an index fix it
@@ -145,7 +148,7 @@ WHERE t.total_value > avg_total.avg_value;
 -- before index
 EXPLAIN ANALYZE
 SELECT * FROM transactions WHERE agent_id = 'A0001';
--- --QUERY PLAN
+-- QUERY PLAN
 -- Seq Scan on transactions  (cost=0.00..3825.56 rows=109 width=57) (actual time=91.266..91.266 rows=0 loops=1)
 --   Filter: ((agent_id)::text = 'A0001'::text)
 --   Rows Removed by Filter: 160285
@@ -165,3 +168,8 @@ SELECT * FROM transactions WHERE agent_id = 'A0001';
 --         Index Cond: ((agent_id)::text = 'A0001'::text)
 -- Planning Time: 4.839 ms
 -- Execution Time: 0.524 ms
+
+-- scan type changed from a Seq Scan (checked all 160,285 rows one by
+-- one) to a Bitmap Index Scan (used the index to find matching rows
+-- directly). execution time dropped from 91.293 ms to 0.524 ms,
+-- about 174x faster
