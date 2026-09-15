@@ -38,6 +38,7 @@ def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     df["value_per_kg_pct_in_chapter"] = df.groupby("hs_chapter")["value_per_kg"].rank(pct=True)
     return df
 
+
 def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
     """How busy the port was: how many containers arrived the same
     day, and how many arrived in the preceding 7 days (not counting
@@ -66,4 +67,25 @@ def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
 
     df["port_same_day_count"] = df["arrived_on"].map(daily_counts)
     df["port_trailing_week_count"] = df["arrived_on"].map(trailing_week)
+    return df
+
+def add_vessel_features(df: pd.DataFrame, vessels: pd.DataFrame) -> pd.DataFrame:
+    """TEU discharged by the same vessel call, and this container's
+    share of that call.
+
+    Container type maps to TEU size (20ft types = 1 TEU, 40ft types
+    = 2 TEU), so share = container_teu / vessel_teu_discharged.
+
+    For the 220 rows flagged vessel_missing, the join has nothing to
+    match, so these come out as NaN. That's expected and correct,
+    not a bug, since there's genuinely no vessel data for them.
+    """
+    df = df.copy()
+    df = df.merge(
+        vessels[["vessel_id", "teu_discharged"]],
+        on="vessel_id",
+        how="left",
+    )
+    df["container_teu"] = df["container_type"].str.startswith("40").map({True: 2, False: 1})
+    df["vessel_teu_share"] = df["container_teu"] / df["teu_discharged"]
     return df
