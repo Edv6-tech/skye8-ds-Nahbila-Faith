@@ -1,10 +1,9 @@
 """
-Stage B features, part 1: calendar features and value density.
+Stage B features, part 1: calendar features, value density, congestion,
+and vessel features.
 
-Both of these only use information already sitting on the container's
-own row (its arrival date, its weight, its declared value), so there's
-no leakage risk here at all. The trickier features (broker/importer
-history, congestion) come in later files.
+Broker/importer history (the highest-signal but highest-risk features)
+come in a later file, alongside the leakage test.
 """
 
 from __future__ import annotations
@@ -27,15 +26,33 @@ def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     """Declared value per kg, and where this container sits in the
     value-per-kg distribution for its own HS chapter.
 
-    The percentile is computed against the whole dataset here, not
-    per fold, because it's describing the container's goods, not its
-    outcome. It doesn't use the label at all, so there's nothing to
-    leak from future rows the way there would be with a delay-history
-    feature.
+    This percentile IS a history feature, even though it doesn't touch
+    the label: a container's rank must only be computed against
+    chapter-mates that arrived earlier. Ranking against the whole
+    dataset (including containers that arrive months later) leaks
+    information from the future into the past, the same way an
+    unshifted broker delay-rate would - it just doesn't use the label,
+    so it's easy to miss.
+
+    Requires df to already be sorted by arrived_on before this is
+    called, or it sorts internally and returns rows in that order.
     """
-    df = df.copy()
+    df = df.sort_values("arrived_on").copy()
     df["value_per_kg"] = df["declared_value_xaf"] / df["gross_weight_kg"]
-    df["value_per_kg_pct_in_chapter"] = df.groupby("hs_chapter")["value_per_kg"].rank(pct=True)
+
+    def _expanding_rank(s: pd.Series) -> pd.Series:
+        # shift(1): a container's own value must not be in the pool
+        # it's ranked against. First container in each chapter has
+        # nothing earlier to compare to, so it comes out NaN -
+        # handle that the same way as cold-start broker/importer
+        # history (e.g. impute with a global prior + a zero-count flag).
+        return s.expanding().rank(pct=True).shift(1)
+
+    df["value_per_kg_pct_in_chapter"] = (
+        df.groupby("hs_chapter")["value_per_kg"]
+        .apply(_expanding_rank)
+        .reset_index(level=0, drop=True)
+    )
     return df
 
 
@@ -69,6 +86,7 @@ def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
     df["port_trailing_week_count"] = df["arrived_on"].map(trailing_week)
     return df
 
+
 def add_vessel_features(df: pd.DataFrame, vessels: pd.DataFrame) -> pd.DataFrame:
     """TEU discharged by the same vessel call, and this container's
     share of that call.
@@ -89,3 +107,53 @@ def add_vessel_features(df: pd.DataFrame, vessels: pd.DataFrame) -> pd.DataFrame
     df["container_teu"] = df["container_type"].str.startswith("40").map({True: 2, False: 1})
     df["vessel_teu_share"] = df["container_teu"] / df["teu_discharged"]
     return df
+
+
+def _add_expanding_history(
+    df: pd.DataFrame, group_col: str, prefix: str
+) -> pd.DataFrame:
+    """Shared logic for broker and importer history: an expanding
+    delay rate and a supporting count, using only containers that
+    arrived strictly before the one being scored.
+
+    df must already be sorted by arrived_on (callers are responsible
+    for this, since both broker and importer history need the same
+    sort and we don't want to pay for it twice).
+
+    The shift(1) is what keeps a container's own outcome out of its
+    own feature: expanding().sum() / expanding().count() computed on
+    'delayed' *up to and including* the current row would let a
+    container's own label leak into its own rate. Shifting by one
+    row (within the group) drops the current row from the window
+    before computing anything.
+    """
+    grouped = df.groupby(group_col)["delayed"]
+    prior_count = grouped.cumcount()
+    prior_sum = grouped.apply(lambda s: s.shift(1).expanding().sum()).reset_index(
+        level=0, drop=True
+    )
+
+    df[f"{prefix}_prior_count"] = prior_count
+    # rate is undefined with zero prior containers - leave NaN and let
+    # the pipeline's imputer handle cold start with a global prior,
+    # rather than silently coding it as 0 (which would say "never
+    # delayed" for brokers/importers we simply have no history on).
+    import numpy as np
+
+    safe_denominator = prior_count.astype("float64").replace(0.0, np.nan)
+    df[f"{prefix}_delay_rate"] = prior_sum / safe_denominator
+    return df
+
+
+def add_broker_history_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Broker's delay rate over strictly-earlier containers, plus how
+    many containers that estimate rests on.
+    """
+    df = df.sort_values("arrived_on").copy()
+    return _add_expanding_history(df, "broker_id", "broker")
+
+
+def add_importer_history_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Same as broker history, for importers."""
+    df = df.sort_values("arrived_on").copy()
+    return _add_expanding_history(df, "importer_id", "importer")
