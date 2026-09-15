@@ -20,18 +20,13 @@ RAW_DIR = Path("data/raw")
 PROCESSED_DIR = Path("data/processed")
 
 
-# --------------------------------------------------------------------------
-# helpers
-# --------------------------------------------------------------------------
-
-
 def parse_mixed_dates(series: pd.Series) -> pd.Series:
     """arrived_on has 3 different date formats mixed together:
     2025-08-16, 11/10/2025, and 08 Apr 2026.
 
-    The slash one is day first, not month first - I checked, there are
-    values like 29/11/2025 where the first number is > 12, so it can't
-    be MM/DD/YYYY.
+    The slash one is day first, not month first. I checked, there are
+    values like 29/11/2025 where the first number is above 12, so it
+    can't be MM/DD/YYYY.
 
     Tries each format one at a time and fills in whatever matches. If
     anything is left over at the end it raises, instead of quietly
@@ -76,7 +71,7 @@ def clean_numeric_string(series: pd.Series, currency_prefix: str | None = None) 
 
 
 def normalize_boolean_flag(series: pd.Series) -> pd.Series:
-    """inspection_selected shows up as TRUE/FALSE/yes/no - same
+    """inspection_selected shows up as TRUE/FALSE/yes/no, same
     meaning, 4 different spellings. Map them all to real booleans.
     """
     mapping = {"true": True, "false": False, "yes": True, "no": False}
@@ -96,18 +91,13 @@ def normalize_target(series: pd.Series) -> pd.Series:
     return out.astype(int)
 
 
-# --------------------------------------------------------------------------
-# loaders for each file
-# --------------------------------------------------------------------------
-
-
 def load_containers(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, dtype=str)
     n_raw = len(df)
 
     # Found 300 fully duplicated rows (150 container_ids showing up
     # twice, every column identical). Just drop the second copy, keep
-    # the first - these aren't conflicting records, they're exact
+    # the first. These aren't conflicting records, they're exact
     # copies of each other.
     n_dup = df["container_id"].duplicated().sum()
     df = df.drop_duplicates(subset="container_id", keep="first")
@@ -129,8 +119,8 @@ def load_containers(path: Path) -> pd.DataFrame:
     df["days_to_clear"] = df["days_to_clear"].astype(int)
 
     # 220 rows point to a vessel_id that isn't in vessels.csv at all.
-    # Keeping these rows (the label doesn't depend on the vessel
-    # table), but flagging them so any vessel-based feature later
+    # Keeping these rows since the label doesn't depend on the vessel
+    # table, but flagging them so any vessel based feature later
     # knows to expect a missing join instead of crashing on it.
     logger.info(
         "containers: %d rows after cleaning (started with %d)",
@@ -170,7 +160,7 @@ def flag_orphan_vessels(containers: pd.DataFrame, vessels: pd.DataFrame) -> pd.D
     n_orphan = containers["vessel_missing"].sum()
     logger.info(
         "containers: %d rows (%d unique vessel_ids) reference a vessel "
-        "not in vessels.csv; flagged with vessel_missing",
+        "not in vessels.csv, flagged with vessel_missing",
         n_orphan,
         containers.loc[containers["vessel_missing"], "vessel_id"].nunique(),
     )

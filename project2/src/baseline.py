@@ -1,29 +1,27 @@
 """
-Stage A baselines - two models on the raw columns, evaluated with
-time-respecting CV. These numbers are the floor everything else
+Stage A baselines. Two models on the raw columns, evaluated with
+time respecting CV. These numbers are the floor everything else
 (engineered features, tuning) gets compared against.
 
 Columns I'm leaving out of every model, and why:
-  - container_id, vessel_id, importer_id, broker_id: just IDs, no
-    signal on their own. Broker/importer history is a real feature
-    but it's computed properly later with an expanding window, not
-    just dumped in as a raw ID.
-  - arrived_on: not used raw. Calendar parts (day of week, month,
-    weekend) get pulled out separately later.
-  - days_to_clear: LEFT OUT. Not just because it's correlated with
-    the target - it's only known once clearance is already done,
-    i.e. after the thing we're trying to predict has already
-    happened. At the moment a container gets discharged (which is
-    when this model actually needs to make a prediction) this number
-    doesn't exist yet.
-  - delayed: that's the target.
+  container_id, vessel_id, importer_id, broker_id: just IDs, no
+  signal on their own. Broker/importer history is a real feature
+  but it's computed properly later with an expanding window, not
+  just dumped in as a raw ID.
 
-Note on the model: the brief points to XGBoost/LightGBM/CatBoost, but
-I don't have internet access in this environment to install them, so
-I'm using sklearn's HistGradientBoostingClassifier instead - same
-family of model, handles missing values fine, works with one-hot
-encoded columns. Swapping in xgboost/lightgbm later shouldn't change
-anything about how the pipeline is structured.
+  arrived_on: not used raw. Calendar parts (day of week, month,
+  weekend) get pulled out separately later.
+
+  days_to_clear: left out. Not just because it's correlated with
+  the target, it's only known once clearance is already done,
+  meaning after the thing we're trying to predict has already
+  happened. At the moment a container gets discharged, which is
+  when this model actually needs to make a prediction, this number
+  doesn't exist yet.
+
+  delayed: that's the target.
+
+Using XGBoost here since that's what the brief recommends.
 """
 
 from __future__ import annotations
@@ -32,20 +30,20 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
+from xgboost import XGBClassifier
 
 from src.split import time_split
 
 RAW_NUMERIC = ["hs_chapter", "gross_weight_kg", "declared_value_xaf"]
 RAW_CATEGORICAL = ["container_type", "origin_port", "inspection_selected"]
-# not using goods_description here - it's free text standing in for
+# Not using goods_description here. It's free text standing in for
 # hs_chapter, which is already in the feature set in structured form.
-# Adding it would just be a high-cardinality text column skewing the
-# "raw columns" floor.
+# Adding it would just be a high cardinality text column skewing the
+# raw columns floor.
 TARGET = "delayed"
 
 
@@ -60,7 +58,7 @@ def build_raw_pipeline() -> Pipeline:
             ),
         ]
     )
-    model = HistGradientBoostingClassifier(random_state=42)
+    model = XGBClassifier(random_state=42, eval_metric="logloss")
     return Pipeline([("prep", preprocessor), ("model", model)])
 
 
@@ -109,8 +107,8 @@ def evaluate_majority_baseline(df: pd.DataFrame, n_splits: int = 5) -> dict[str,
         clf = DummyClassifier(strategy="most_frequent")
         clf.fit(np.zeros((len(y_train), 1)), y_train)
         proba = clf.predict_proba(np.zeros((len(y_val), 1)))[:, 1]
-        # majority class predicts the same thing every time, so
-        # ROC-AUC isn't really defined - falls back to 0.5 by
+        # Majority class predicts the same thing every time, so
+        # ROC-AUC isn't really defined. It falls back to 0.5 by
         # convention. PR-AUC still tells us something vs the base rate.
         try:
             roc = roc_auc_score(y_val, proba)
