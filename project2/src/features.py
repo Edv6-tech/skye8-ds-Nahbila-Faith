@@ -37,3 +37,33 @@ def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     df["value_per_kg"] = df["declared_value_xaf"] / df["gross_weight_kg"]
     df["value_per_kg_pct_in_chapter"] = df.groupby("hs_chapter")["value_per_kg"].rank(pct=True)
     return df
+
+def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
+    """How busy the port was: how many containers arrived the same
+    day, and how many arrived in the preceding 7 days (not counting
+    today).
+
+    Same-day count doesn't touch the label at all, just counts of
+    arrivals, so there's no leakage risk in the sense that matters for
+    this project. Trailing week count is shifted by one day so it
+    only counts containers that arrived strictly before today, in
+    keeping with the general rule that any history-style feature
+    should only look backwards.
+    """
+    df = df.copy()
+
+    daily_counts = df.groupby("arrived_on").size()
+
+    all_dates = pd.date_range(daily_counts.index.min(), daily_counts.index.max())
+    daily_counts_full = daily_counts.reindex(all_dates, fill_value=0)
+
+    trailing_week = (
+        daily_counts_full.rolling(window=7, min_periods=1)
+        .sum()
+        .shift(1)
+        .fillna(0)
+    )
+
+    df["port_same_day_count"] = df["arrived_on"].map(daily_counts)
+    df["port_trailing_week_count"] = df["arrived_on"].map(trailing_week)
+    return df
