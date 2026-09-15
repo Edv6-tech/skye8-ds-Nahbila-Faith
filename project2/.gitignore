@@ -1,0 +1,7 @@
+data/raw/
+data/processed/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+optuna_study.db
