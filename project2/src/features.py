@@ -8,6 +8,8 @@ come in a later file, alongside the leakage test.
 
 from __future__ import annotations
 
+import bisect
+
 import pandas as pd
 
 
@@ -34,23 +36,46 @@ def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     unshifted broker delay-rate would - it just doesn't use the label,
     so it's easy to miss.
 
+    NOTE on an earlier, subtly wrong version of this fix: computing
+    `.expanding().rank(pct=True)` and then `.shift(1)`-ing the
+    *result* does not do what it looks like it does. That shifts an
+    already-computed number down one row, so row i ends up with row
+    i-1's rank of row i-1's OWN value - not row i's value ranked
+    against its own priors. It happens to look right on monotonically
+    increasing data (which is why a quick synthetic check missed it),
+    but it isn't actually using each row's own value at all.
+
+    The shift-then-aggregate trick used for broker/importer history
+    works there because sum/mean are pure aggregates of the past.
+    Rank doesn't have that property: it needs the current row's own
+    value plugged into a window of *only* prior values, which is an
+    online computation, not a shift. Hence the explicit incremental
+    version below.
+
     Requires df to already be sorted by arrived_on before this is
     called, or it sorts internally and returns rows in that order.
     """
     df = df.sort_values("arrived_on").copy()
     df["value_per_kg"] = df["declared_value_xaf"] / df["gross_weight_kg"]
 
-    def _expanding_rank(s: pd.Series) -> pd.Series:
-        # shift(1): a container's own value must not be in the pool
-        # it's ranked against. First container in each chapter has
-        # nothing earlier to compare to, so it comes out NaN -
-        # handle that the same way as cold-start broker/importer
-        # history (e.g. impute with a global prior + a zero-count flag).
-        return s.expanding().rank(pct=True).shift(1)
+    def _prior_percentile(s: pd.Series) -> pd.Series:
+        seen: list[float] = []
+        out = []
+        for v in s:
+            if seen:
+                # fraction of strictly-prior values below this one
+                out.append(bisect.bisect_left(seen, v) / len(seen))
+            else:
+                # first container in the chapter has no prior values
+                # to compare against - cold start, same as broker/
+                # importer history with zero prior containers.
+                out.append(float("nan"))
+            bisect.insort(seen, v)
+        return pd.Series(out, index=s.index)
 
     df["value_per_kg_pct_in_chapter"] = (
         df.groupby("hs_chapter")["value_per_kg"]
-        .apply(_expanding_rank)
+        .apply(_prior_percentile)
         .reset_index(level=0, drop=True)
     )
     return df
