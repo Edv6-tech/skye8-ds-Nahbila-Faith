@@ -1,15 +1,28 @@
 """
-Stage B features, part 1: calendar features, value density, congestion,
-and vessel features.
+Stage B features: calendar features, value density, congestion,
+vessel features, and broker/importer history.
 
-Broker/importer history (the highest-signal but highest-risk features)
-come in a later file, alongside the leakage test.
+All "prior" features here are computed by DAY, not by row. Sorting by
+arrived_on alone only fixes the order between different days - it does
+nothing about the order of containers that share a day, and that order
+is arbitrary (whatever position they happened to land in after a
+stable sort of the raw CSV). Two containers from the same broker
+discharged on the same day are not "earlier" than each other, so
+neither may see the other's outcome. Batching by day - compute every
+same-day row's feature from the state as of the END of the PREVIOUS
+day, then fold the whole day's values in at once - is what makes that
+true regardless of row order within the day. A per-row incremental
+loop (process row 1, insert row 1, process row 2, ...) looks like it
+respects time order but actually leaks across same-day ties; this bit
+us once already in the CV splitter (fixed by splitting on unique dates
+instead of row position) and applies here for exactly the same reason.
 """
 
 from __future__ import annotations
 
 import bisect
 
+import numpy as np
 import pandas as pd
 
 
@@ -26,31 +39,18 @@ def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     """Declared value per kg, and where this container sits in the
-    value-per-kg distribution for its own HS chapter.
+    value-per-kg distribution for its own HS chapter, using only
+    chapter-mates that arrived on a STRICTLY EARLIER day.
 
-    This percentile IS a history feature, even though it doesn't touch
-    the label: a container's rank must only be computed against
-    chapter-mates that arrived earlier. Ranking against the whole
-    dataset (including containers that arrive months later) leaks
-    information from the future into the past, the same way an
-    unshifted broker delay-rate would - it just doesn't use the label,
-    so it's easy to miss.
-
-    NOTE on an earlier, subtly wrong version of this fix: computing
-    `.expanding().rank(pct=True)` and then `.shift(1)`-ing the
-    *result* does not do what it looks like it does. That shifts an
-    already-computed number down one row, so row i ends up with row
-    i-1's rank of row i-1's OWN value - not row i's value ranked
-    against its own priors. It happens to look right on monotonically
-    increasing data (which is why a quick synthetic check missed it),
-    but it isn't actually using each row's own value at all.
-
-    The shift-then-aggregate trick used for broker/importer history
-    works there because sum/mean are pure aggregates of the past.
-    Rank doesn't have that property: it needs the current row's own
-    value plugged into a window of *only* prior values, which is an
-    online computation, not a shift. Hence the explicit incremental
-    version below.
+    Batched by day: every container that arrived on the same day gets
+    its percentile computed against the same "seen" set - whatever
+    values had accumulated through the end of the previous day - and
+    only after every same-day row has been scored do that day's own
+    values get folded into "seen" for the next day. This is what
+    keeps same-day chapter-mates from leaking into each other, which
+    a row-by-row incremental version (insert immediately after each
+    row) would not: with 92% of chapter-days holding more than one
+    container, that gap would fire on almost every group.
 
     Requires df to already be sorted by arrived_on before this is
     called, or it sorts internally and returns rows in that order.
@@ -58,26 +58,30 @@ def add_value_density_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("arrived_on").copy()
     df["value_per_kg"] = df["declared_value_xaf"] / df["gross_weight_kg"]
 
-    def _prior_percentile(s: pd.Series) -> pd.Series:
+    def _prior_percentile_by_day(group: pd.DataFrame) -> pd.Series:
         seen: list[float] = []
-        out = []
-        for v in s:
-            if seen:
-                # fraction of strictly-prior values below this one
-                out.append(bisect.bisect_left(seen, v) / len(seen))
+        out = pd.Series(index=group.index, dtype="float64")
+        for _, day_rows in group.groupby("arrived_on", sort=True):
+            n = len(seen)
+            if n == 0:
+                # first day this chapter has any data - cold start,
+                # same treatment as broker/importer history with zero
+                # prior containers.
+                out.loc[day_rows.index] = float("nan")
             else:
-                # first container in the chapter has no prior values
-                # to compare against - cold start, same as broker/
-                # importer history with zero prior containers.
-                out.append(float("nan"))
-            bisect.insort(seen, v)
-        return pd.Series(out, index=s.index)
+                out.loc[day_rows.index] = [
+                    bisect.bisect_left(seen, v) / n for v in day_rows["value_per_kg"]
+                ]
+            # fold the whole day in at once, only after every row in
+            # it has already been scored against the pre-day state.
+            for v in day_rows["value_per_kg"]:
+                bisect.insort(seen, v)
+        return out
 
-    df["value_per_kg_pct_in_chapter"] = (
-        df.groupby("hs_chapter")["value_per_kg"]
-        .apply(_prior_percentile)
-        .reset_index(level=0, drop=True)
-    )
+    pct = pd.Series(index=df.index, dtype="float64")
+    for _, chapter_rows in df.groupby("hs_chapter"):
+        pct.loc[chapter_rows.index] = _prior_percentile_by_day(chapter_rows)
+    df["value_per_kg_pct_in_chapter"] = pct
     return df
 
 
@@ -86,12 +90,12 @@ def add_congestion_features(df: pd.DataFrame) -> pd.DataFrame:
     day, and how many arrived in the preceding 7 days (not counting
     today).
 
-    Same-day count doesn't touch the label at all, just counts of
-    arrivals, so there's no leakage risk in the sense that matters for
-    this project. Trailing week count is shifted by one day so it
-    only counts containers that arrived strictly before today, in
-    keeping with the general rule that any history-style feature
-    should only look backwards.
+    This one was already day-batched in the original version (it
+    works off `daily_counts`, a per-date aggregate, from the start)
+    so it doesn't have the same-day-tie problem the history features
+    had. Same-day count doesn't touch the label at all, just counts
+    of arrivals. Trailing week count is shifted by one day so it only
+    counts containers that arrived strictly before today.
     """
     df = df.copy()
 
@@ -139,40 +143,54 @@ def _add_expanding_history(
 ) -> pd.DataFrame:
     """Shared logic for broker and importer history: an expanding
     delay rate and a supporting count, using only containers that
-    arrived strictly before the one being scored.
+    arrived on a STRICTLY EARLIER day than the one being scored.
+
+    Aggregated to (group_col, arrived_on) first, so every row sharing
+    a group and a day is guaranteed to see the identical prior state -
+    whatever had accumulated through the end of the previous day that
+    group had any activity. This is deliberately NOT a per-row
+    expanding().shift(1): that only drops the current *row* from the
+    window, which stops a container's own outcome from entering its
+    own feature (the test the brief requires), but does nothing about
+    a same-day sibling row's outcome entering the window - and with
+    65% of broker-days holding more than one container, that gap
+    would fire constantly. Aggregating to the day level first closes
+    it, because the shift then operates on whole days, not rows.
 
     df must already be sorted by arrived_on (callers are responsible
     for this, since both broker and importer history need the same
     sort and we don't want to pay for it twice).
-
-    The shift(1) is what keeps a container's own outcome out of its
-    own feature: expanding().sum() / expanding().count() computed on
-    'delayed' *up to and including* the current row would let a
-    container's own label leak into its own rate. Shifting by one
-    row (within the group) drops the current row from the window
-    before computing anything.
     """
-    grouped = df.groupby(group_col)["delayed"]
-    prior_count = grouped.cumcount()
-    prior_sum = grouped.apply(lambda s: s.shift(1).expanding().sum()).reset_index(
-        level=0, drop=True
+    daily = (
+        df.groupby([group_col, "arrived_on"])["delayed"]
+        .agg(day_count="count", day_sum="sum")
+        .reset_index()
+        .sort_values([group_col, "arrived_on"])
     )
 
-    df[f"{prefix}_prior_count"] = prior_count
+    grouped = daily.groupby(group_col)
+    daily["prior_count"] = grouped["day_count"].cumsum() - daily["day_count"]
+    daily["prior_sum"] = grouped["day_sum"].cumsum() - daily["day_sum"]
+
     # rate is undefined with zero prior containers - leave NaN and let
     # the pipeline's imputer handle cold start with a global prior,
     # rather than silently coding it as 0 (which would say "never
     # delayed" for brokers/importers we simply have no history on).
-    import numpy as np
+    safe_denominator = daily["prior_count"].astype("float64").replace(0.0, np.nan)
+    daily[f"{prefix}_delay_rate"] = daily["prior_sum"] / safe_denominator
+    daily = daily.rename(columns={"prior_count": f"{prefix}_prior_count"})
 
-    safe_denominator = prior_count.astype("float64").replace(0.0, np.nan)
-    df[f"{prefix}_delay_rate"] = prior_sum / safe_denominator
+    df = df.merge(
+        daily[[group_col, "arrived_on", f"{prefix}_prior_count", f"{prefix}_delay_rate"]],
+        on=[group_col, "arrived_on"],
+        how="left",
+    )
     return df
 
 
 def add_broker_history_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Broker's delay rate over strictly-earlier containers, plus how
-    many containers that estimate rests on.
+    """Broker's delay rate over strictly-earlier-day containers, plus
+    how many containers that estimate rests on.
     """
     df = df.sort_values("arrived_on").copy()
     return _add_expanding_history(df, "broker_id", "broker")

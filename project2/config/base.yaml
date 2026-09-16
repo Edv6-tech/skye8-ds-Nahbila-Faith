@@ -1,0 +1,25 @@
+data_dir: data/raw
+
+split:
+ 
+  final_holdout_start: "2026-05-01"
+ 
+  dev_val_cutoff: "2026-01-20"
+
+target: delayed
+
+random_state: 42
+
+stage_a:
+  model: hist_gradient_boosting_default
+
+optuna:
+  n_trials: 80
+  study_name: skye8_pr3_gbm
+  storage: "sqlite:///artifacts/optuna_study.db"
+
+operating_point:
+  containers_chased_per_week: 60
+
+high_card_encoding: onehot
+n_splits: 5
