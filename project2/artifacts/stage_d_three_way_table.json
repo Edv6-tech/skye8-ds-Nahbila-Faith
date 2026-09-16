@@ -1,0 +1,26 @@
+{
+  "table": {
+    "raw": {
+      "roc_auc": 0.7278337277832115,
+      "pr_auc": 0.568948864731375
+    },
+    "engineered": {
+      "roc_auc": 0.8840705084452303,
+      "pr_auc": 0.8129400551835833
+    },
+    "tuned": {
+      "roc_auc": 0.8882293318638789,
+      "pr_auc": 0.8199925933291954
+    }
+  },
+  "gain_raw_to_engineered": 0.1562,
+  "gain_engineered_to_tuned": 0.0042,
+  "best_params": {
+    "max_iter": 123,
+    "learning_rate": 0.06944133668859741,
+    "max_leaf_nodes": 24,
+    "l2_regularization": 0.8021752015412407,
+    "max_depth": 3,
+    "min_samples_leaf": 17
+  }
+}
