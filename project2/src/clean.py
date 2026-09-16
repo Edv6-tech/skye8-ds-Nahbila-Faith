@@ -167,6 +167,27 @@ def flag_orphan_vessels(containers: pd.DataFrame, vessels: pd.DataFrame) -> pd.D
     return containers
 
 
+def load_clean(
+    raw_dir: Path = RAW_DIR,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Loads and cleans all four raw files in one call, returns them as
+    (containers, brokers, importers, vessels).
+
+    This is what other modules (features, pipeline, etc.) should
+    import instead of duplicating the load_containers/load_brokers/...
+    calls themselves - one place that knows how to go from raw CSVs
+    to clean dataframes.
+    """
+    containers = load_containers(raw_dir / "containers.csv")
+    brokers = load_brokers(raw_dir / "brokers.csv")
+    importers = load_importers(raw_dir / "importers.csv")
+    vessels = load_vessels(raw_dir / "vessels.csv")
+
+    containers = flag_orphan_vessels(containers, vessels)
+
+    return containers, brokers, importers, vessels
+
+
 def main() -> None:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
