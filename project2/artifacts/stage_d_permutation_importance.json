@@ -1,0 +1,142 @@
+[
+  {
+    "feature": "broker_delay_rate",
+    "importance_mean": 0.21898093460074053,
+    "importance_std": 0.007157414679081203
+  },
+  {
+    "feature": "inspection_selected",
+    "importance_mean": 0.1001520531020802,
+    "importance_std": 0.0022294521670192797
+  },
+  {
+    "feature": "importer_delay_rate",
+    "importance_mean": 0.022911188589236374,
+    "importance_std": 0.0008847253962442859
+  },
+  {
+    "feature": "arrival_day_of_week",
+    "importance_mean": 0.008337671702954774,
+    "importance_std": 0.0010371818272341955
+  },
+  {
+    "feature": "port_same_day_count",
+    "importance_mean": 0.004521088691780029,
+    "importance_std": 0.0003480738455236502
+  },
+  {
+    "feature": "value_per_kg_pct_in_chapter",
+    "importance_mean": 0.003275831856785605,
+    "importance_std": 0.0004923670289901783
+  },
+  {
+    "feature": "value_per_kg",
+    "importance_mean": 0.002187439516901246,
+    "importance_std": 0.00037569732752198596
+  },
+  {
+    "feature": "broker_id",
+    "importance_mean": 0.0004978955969866638,
+    "importance_std": 0.00010921332969590605
+  },
+  {
+    "feature": "importer_id",
+    "importance_mean": 0.00027641162237772575,
+    "importance_std": 5.2925793044014984e-05
+  },
+  {
+    "feature": "gross_weight_kg",
+    "importance_mean": 9.490872489437141e-05,
+    "importance_std": 6.148859520023824e-05
+  },
+  {
+    "feature": "hs_chapter",
+    "importance_mean": 9.309900153414707e-05,
+    "importance_std": 7.2603918518778e-05
+  },
+  {
+    "feature": "teu_discharged",
+    "importance_mean": 3.6616009190770794e-05,
+    "importance_std": 1.812209398325622e-05
+  },
+  {
+    "feature": "port_trailing_week_count",
+    "importance_mean": 1.9761597655743034e-05,
+    "importance_std": 2.262505341191599e-05
+  },
+  {
+    "feature": "origin_port",
+    "importance_mean": 9.237583898669132e-06,
+    "importance_std": 2.0218878586669426e-05
+  },
+  {
+    "feature": "container_type",
+    "importance_mean": 2.300311018055279e-06,
+    "importance_std": 1.7328352391019415e-05
+  },
+  {
+    "feature": "importer_prior_count",
+    "importance_mean": 1.8387952213205772e-06,
+    "importance_std": 5.389802717801011e-06
+  },
+  {
+    "feature": "vessel_teu_share",
+    "importance_mean": 2.761826814801083e-07,
+    "importance_std": 5.3380521023424655e-06
+  },
+  {
+    "feature": "container_id",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "vessel_id",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "arrived_on",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "goods_description",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "days_to_clear",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "vessel_missing",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "arrival_month",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "arrival_is_weekend",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "container_teu",
+    "importance_mean": 0.0,
+    "importance_std": 0.0
+  },
+  {
+    "feature": "declared_value_xaf",
+    "importance_mean": -8.65978065717199e-06,
+    "importance_std": 3.8912071451077066e-05
+  },
+  {
+    "feature": "broker_prior_count",
+    "importance_mean": -9.035534463270878e-05,
+    "importance_std": 0.00012194863643880033
+  }
+]

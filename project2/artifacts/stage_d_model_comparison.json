@@ -1,0 +1,17 @@
+{
+  "gbm": {
+    "roc_auc_mean": 0.8840705084452303,
+    "pr_auc_mean": 0.8129400551835833,
+    "seconds": 84.5
+  },
+  "random_forest": {
+    "roc_auc_mean": 0.8801615895552134,
+    "pr_auc_mean": 0.8039566913302778,
+    "seconds": 106.4
+  },
+  "logistic_regression": {
+    "roc_auc_mean": 0.894273979008448,
+    "pr_auc_mean": 0.8304813042488742,
+    "seconds": 16.1
+  }
+}
