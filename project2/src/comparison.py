@@ -1,4 +1,8 @@
-
+"""Stage C commit 3.
+Compares three ways of encoding broker_id and importer_id.
+Also computes the raw columns floor on the same folds so the gain is a fair comparison.
+Uses split.py cv_splits, a fresh pipeline is fit on each fold.
+"""
 from __future__ import annotations
 
 import json
