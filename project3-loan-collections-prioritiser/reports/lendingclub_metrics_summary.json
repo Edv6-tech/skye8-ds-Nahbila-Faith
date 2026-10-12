@@ -1,0 +1,48 @@
+{
+  "dataset": "LendingClub Loan Data (accepted_2007_to_2018Q4.csv)",
+  "total_records_analyzed": 350000,
+  "arrears_population_size": 64328,
+  "arrears_rate_pct": 18.379428571428573,
+  "base_recovery_rate_pct": 68.48961571943788,
+  "test_set_size": 16082,
+  "roc_auc": 0.6014585013336642,
+  "pr_auc": 0.7676993375065533,
+  "k_evaluations": {
+    "50": {
+      "precision_incumbent": 0.72,
+      "precision_ml": 0.9,
+      "precision_lift_ratio": 1.25,
+      "money_recovered_incumbent_usd": 215803.17,
+      "money_recovered_ml_usd": 256459.12,
+      "money_lift_usd": 40655.94999999998,
+      "money_lift_pct": 18.839366446748667
+    },
+    "100": {
+      "precision_incumbent": 0.79,
+      "precision_ml": 0.82,
+      "precision_lift_ratio": 1.0379746835443038,
+      "money_recovered_incumbent_usd": 402154.3499999999,
+      "money_recovered_ml_usd": 448025.31999999995,
+      "money_lift_usd": 45870.97000000003,
+      "money_lift_pct": 11.4063095425923
+    },
+    "200": {
+      "precision_incumbent": 0.77,
+      "precision_ml": 0.83,
+      "precision_lift_ratio": 1.077922077922078,
+      "money_recovered_incumbent_usd": 840720.3999999999,
+      "money_recovered_ml_usd": 841395.5499999999,
+      "money_lift_usd": 675.1500000000233,
+      "money_lift_pct": 0.08030612793504516
+    },
+    "400": {
+      "precision_incumbent": 0.785,
+      "precision_ml": 0.8225,
+      "precision_lift_ratio": 1.0477707006369426,
+      "money_recovered_incumbent_usd": 1544236.3699999999,
+      "money_recovered_ml_usd": 1617639.2999999998,
+      "money_lift_usd": 73402.92999999993,
+      "money_lift_pct": 4.753348090098405
+    }
+  }
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: mfi_collections_db
+    environment:
+      POSTGRES_DB: skye8_collections_db
+      POSTGRES_USER: mfi_admin
+      POSTGRES_PASSWORD: mfi_secure_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  skye8-collections-app:
+    build: .
+    container_name: skye8_collections_prioritiser
+    env_file:
+      - .env
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - DB_NAME=skye8_collections_db
+      - DB_USER=mfi_admin
+      - DB_PASSWORD=mfi_secure_password_2026
+    ports:
+      - "8501:8501"  # Streamlit UI
+      - "8080:8080"  # Production REST API
+    depends_on:
+      - postgres-db
+    restart: always
+
+volumes:
+  postgres_data:

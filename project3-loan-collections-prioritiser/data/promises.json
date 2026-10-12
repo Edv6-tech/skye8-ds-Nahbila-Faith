@@ -1,0 +1,47 @@
+[
+  {
+    "promise_id": "202E5610",
+    "account_id": 103380,
+    "loan_id": 0,
+    "officer_name": "Grace Nkemelu",
+    "amount_fcfa": 25000.0,
+    "promise_date": "2026-10-10",
+    "phone": "",
+    "channel": "CALL",
+    "notes": "Client promised after market day",
+    "status": "KEPT",
+    "created_at": "2026-10-03T10:14:25.817789Z",
+    "resolved_at": "2026-10-06T11:48:11.494484Z",
+    "resolution_note": "Auto-resolved: Payment of 10,000 FCFA received via bulk reconciliation."
+  },
+  {
+    "promise_id": "253071A3",
+    "account_id": 103380,
+    "loan_id": 0,
+    "officer_name": "Grace Nkemelu",
+    "amount_fcfa": 25000.0,
+    "promise_date": "2026-10-10",
+    "phone": "",
+    "channel": "CALL",
+    "notes": "Will pay after market",
+    "status": "KEPT",
+    "created_at": "2026-10-03T10:19:07.660424Z",
+    "resolved_at": "2026-10-03T10:19:07.802811Z",
+    "resolution_note": "Paid in branch"
+  },
+  {
+    "promise_id": "3F7355F0",
+    "account_id": 103380,
+    "loan_id": 0,
+    "officer_name": "Audit Officer",
+    "amount_fcfa": 15000.0,
+    "promise_date": "2026-10-15",
+    "phone": "677000001",
+    "channel": "CALL",
+    "notes": "",
+    "status": "KEPT",
+    "created_at": "2026-10-06T11:30:41.379280Z",
+    "resolved_at": "2026-10-06T11:48:11.474083Z",
+    "resolution_note": "Auto-resolved: Payment of 10,000 FCFA received via bulk reconciliation."
+  }
+]

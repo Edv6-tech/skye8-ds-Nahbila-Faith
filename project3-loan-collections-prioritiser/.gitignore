@@ -1,0 +1,14 @@
+# Data and credentials must NEVER enter git history
+data/raw/*
+!data/raw/.gitkeep
+*.csv
+*.parquet
+*.zip
+kaggle.json
+.env
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.pytest_cache/
+*.exe
+cloudflared.exe

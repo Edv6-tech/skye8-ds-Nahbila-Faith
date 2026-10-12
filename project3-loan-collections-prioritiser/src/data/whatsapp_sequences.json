@@ -1,0 +1,213 @@
+[
+  {
+    "seq_id": "WA-AAF0242B",
+    "account_id": 103380,
+    "loan_id": 0,
+    "phone": "237670123456",
+    "overdue_fcfa": 75000.0,
+    "client_name": "Jean Fouda",
+    "officer_name": "Grace Nkemelu",
+    "status": "ACTIVE",
+    "created_at": "2026-10-03T10:14:26.272763Z",
+    "schedule": [
+      {
+        "step": 1,
+        "day_offset": 0,
+        "scheduled_at": "2026-10-03T10:14:26.272763Z",
+        "status": "SENT",
+        "sent_at": "2026-10-03T10:14:26.273085Z"
+      },
+      {
+        "step": 3,
+        "day_offset": 3,
+        "scheduled_at": "2026-10-06T10:14:26.272763Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 7,
+        "day_offset": 7,
+        "scheduled_at": "2026-10-10T10:14:26.272763Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 15,
+        "day_offset": 15,
+        "scheduled_at": "2026-10-18T10:14:26.272763Z",
+        "status": "PENDING",
+        "sent_at": null
+      }
+    ],
+    "messages_sent": [
+      {
+        "step": 1,
+        "lang": "French",
+        "text": "Cher(e) Jean Fouda,\n\nNous vous rappelons que votre remboursement de *75,000 FCFA* est dû. Veuillez effectuer votre paiement dès que possible pour maintenir votre bon dossier de crédit.\n\nPaiement rapide : https://pay.campay.net/skye8/103380\n\nMerci de votre confiance.\n— Votre Coopérative (Skye8)",
+        "sent": true,
+        "sent_at": "2026-10-03T10:14:26.273058Z",
+        "simulated": true,
+        "error": ""
+      }
+    ]
+  },
+  {
+    "seq_id": "WA-9C68A83D",
+    "account_id": 103380,
+    "loan_id": 4411,
+    "phone": "237670123456",
+    "overdue_fcfa": 25000.0,
+    "client_name": "Jean Foka",
+    "officer_name": "System",
+    "status": "ACTIVE",
+    "created_at": "2026-10-06T08:54:58.848296Z",
+    "schedule": [
+      {
+        "step": 1,
+        "day_offset": 0,
+        "scheduled_at": "2026-10-06T08:54:58.848296Z",
+        "status": "SENT",
+        "sent_at": "2026-10-06T08:54:58.848594Z"
+      },
+      {
+        "step": 3,
+        "day_offset": 3,
+        "scheduled_at": "2026-10-09T08:54:58.848296Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 7,
+        "day_offset": 7,
+        "scheduled_at": "2026-10-13T08:54:58.848296Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 15,
+        "day_offset": 15,
+        "scheduled_at": "2026-10-21T08:54:58.848296Z",
+        "status": "PENDING",
+        "sent_at": null
+      }
+    ],
+    "messages_sent": [
+      {
+        "step": 1,
+        "lang": "French",
+        "text": "Cher(e) Jean Foka,\n\nNous vous rappelons que votre remboursement de *25,000 FCFA* est dû. Veuillez effectuer votre paiement dès que possible pour maintenir votre bon dossier de crédit.\n\nPaiement rapide : https://pay.campay.net/skye8/103380\n\nMerci de votre confiance.\n— Votre Coopérative (Skye8)",
+        "sent": true,
+        "sent_at": "2026-10-06T08:54:58.848573Z",
+        "simulated": true,
+        "provider": "simulation",
+        "error": ""
+      }
+    ]
+  },
+  {
+    "seq_id": "WA-F186644E",
+    "account_id": 103380,
+    "loan_id": 4411,
+    "phone": "237670123456",
+    "overdue_fcfa": 25000.0,
+    "client_name": "Jean Foka",
+    "officer_name": "System",
+    "status": "ACTIVE",
+    "created_at": "2026-10-06T08:55:21.913466Z",
+    "schedule": [
+      {
+        "step": 1,
+        "day_offset": 0,
+        "scheduled_at": "2026-10-06T08:55:21.913466Z",
+        "status": "SENT",
+        "sent_at": "2026-10-06T08:55:21.913900Z"
+      },
+      {
+        "step": 3,
+        "day_offset": 3,
+        "scheduled_at": "2026-10-09T08:55:21.913466Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 7,
+        "day_offset": 7,
+        "scheduled_at": "2026-10-13T08:55:21.913466Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 15,
+        "day_offset": 15,
+        "scheduled_at": "2026-10-21T08:55:21.913466Z",
+        "status": "PENDING",
+        "sent_at": null
+      }
+    ],
+    "messages_sent": [
+      {
+        "step": 1,
+        "lang": "French",
+        "text": "Cher(e) Jean Foka,\n\nNous vous rappelons que votre remboursement de *25,000 FCFA* est dû. Veuillez effectuer votre paiement dès que possible pour maintenir votre bon dossier de crédit.\n\nPaiement rapide : https://pay.campay.net/skye8/103380\n\nMerci de votre confiance.\n— Votre Coopérative (Skye8)",
+        "sent": true,
+        "sent_at": "2026-10-06T08:55:21.913851Z",
+        "simulated": true,
+        "provider": "simulation",
+        "error": ""
+      }
+    ]
+  },
+  {
+    "seq_id": "WA-E0A9DC63",
+    "account_id": 103380,
+    "loan_id": 0,
+    "phone": "677000001",
+    "overdue_fcfa": 25000.0,
+    "client_name": "",
+    "officer_name": "Audit Officer",
+    "status": "ACTIVE",
+    "created_at": "2026-10-06T11:30:41.313288Z",
+    "schedule": [
+      {
+        "step": 1,
+        "day_offset": 0,
+        "scheduled_at": "2026-10-06T11:30:41.313288Z",
+        "status": "SENT",
+        "sent_at": "2026-10-06T11:30:41.313572Z"
+      },
+      {
+        "step": 3,
+        "day_offset": 3,
+        "scheduled_at": "2026-10-09T11:30:41.313288Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 7,
+        "day_offset": 7,
+        "scheduled_at": "2026-10-13T11:30:41.313288Z",
+        "status": "PENDING",
+        "sent_at": null
+      },
+      {
+        "step": 15,
+        "day_offset": 15,
+        "scheduled_at": "2026-10-21T11:30:41.313288Z",
+        "status": "PENDING",
+        "sent_at": null
+      }
+    ],
+    "messages_sent": [
+      {
+        "step": 1,
+        "lang": "French",
+        "text": "Cher(e) Client #103380,\n\nNous vous rappelons que votre remboursement de *25,000 FCFA* est dû. Veuillez effectuer votre paiement dès que possible pour maintenir votre bon dossier de crédit.\n\nPaiement rapide : https://pay.campay.net/skye8/103380\n\nMerci de votre confiance.\n— Votre Coopérative (Skye8)",
+        "sent": true,
+        "sent_at": "2026-10-06T11:30:41.313552Z",
+        "simulated": true,
+        "provider": "simulation",
+        "error": ""
+      }
+    ]
+  }
+]
